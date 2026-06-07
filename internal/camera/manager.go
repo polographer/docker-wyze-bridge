@@ -280,7 +280,7 @@ func (m *Manager) streamSourceFor(cam *Camera) (url, protocol string) {
 	case info.IsGwell():
 		return "", "gwell"
 	default:
-		return cam.StreamURL(), "tutk"
+		return cam.StreamURL(m.cfg.TutkDiscoveryTimeout), "tutk"
 	}
 }
 
@@ -414,7 +414,7 @@ func (m *Manager) SetQuality(ctx context.Context, name, quality string) error {
 	}
 	// Remove and re-add in go2rtc with new URL
 	_ = go2rtc.DeleteStream(ctx, name)
-	return go2rtc.AddStream(ctx, name, cam.StreamURL())
+	return go2rtc.AddStream(ctx, name, cam.StreamURL(m.cfg.TutkDiscoveryTimeout))
 }
 
 // RestartStream forces a camera reconnect.

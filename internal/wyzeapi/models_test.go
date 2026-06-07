@@ -3,6 +3,7 @@ package wyzeapi
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestCameraInfo_NormalizedName(t *testing.T) {
@@ -36,7 +37,7 @@ func TestCameraInfo_StreamURL(t *testing.T) {
 		DTLS:  true,
 	}
 
-	url := cam.StreamURL("hd")
+	url := cam.StreamURL("hd", 0)
 
 	if !strings.HasPrefix(url, "wyze://192.168.1.10?") {
 		t.Errorf("StreamURL should start with wyze://IP, got %q", url)
@@ -59,6 +60,28 @@ func TestCameraInfo_StreamURL(t *testing.T) {
 	// ENR should be URL-encoded
 	if !strings.Contains(url, "enr=abc123") {
 		t.Error("StreamURL missing enr")
+	}
+}
+
+func TestCameraInfo_StreamURLWithDiscoverTimeout(t *testing.T) {
+	cam := CameraInfo{
+		LanIP: "192.168.1.10",
+		P2PID: "TESTUID123456789012",
+		ENR:   "abc123",
+		MAC:   "AABBCCDDEEFF",
+		Model: "HL_CAM4",
+		DTLS:  true,
+	}
+
+	url := cam.StreamURL("hd", 15*time.Second)
+	if !strings.Contains(url, "timeout=15s") {
+		t.Errorf("StreamURL should contain timeout=15s, got %q", url)
+	}
+
+	// Zero duration should NOT add timeout param
+	urlNoTimeout := cam.StreamURL("hd", 0)
+	if strings.Contains(urlNoTimeout, "timeout=") {
+		t.Errorf("StreamURL with 0 timeout should not contain timeout param, got %q", urlNoTimeout)
 	}
 }
 

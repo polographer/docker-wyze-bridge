@@ -1,27 +1,35 @@
-# ── Stage 1: Fetch go2rtc binary + video-rtc.js ─────────────────────────────
-FROM alpine:3.21 AS go2rtc-fetch
+# ── Stage 1: Fetch video-rtc.js from go2rtc release ───────────────────────────
+FROM alpine:3.21 AS video-rtc-fetch
 ARG GO2RTC_VERSION=1.9.14
-ARG TARGETARCH
 RUN apk add --no-cache curl ca-certificates && \
-    ARCH=${TARGETARCH}; \
-    if [ "$ARCH" = "arm" ]; then ARCH="arm"; fi; \
-    curl -fsSL \
-      "https://github.com/AlexxIT/go2rtc/releases/download/v${GO2RTC_VERSION}/go2rtc_linux_${ARCH}" \
-      -o /go2rtc && \
-    chmod +x /go2rtc && \
     curl -fsSL \
       "https://github.com/AlexxIT/go2rtc/raw/v${GO2RTC_VERSION}/www/video-rtc.js" \
       -o /video-rtc.js
 
-# ── Stage 2: Build Go binary ──────────────────────────────────────────────────
+# ── Stage 2: Build patched go2rtc binary ─────────────────────────────────────
+FROM golang:1.26.2-alpine AS go2rtc-builder
+RUN apk add --no-cache git ca-certificates
+ARG GO2RTC_VERSION=1.9.14
+ARG TARGETARCH
+# Build go2rtc from source so we can apply our custom patch (TUTK discover timeout)
+RUN git clone --depth 1 --branch v${GO2RTC_VERSION} https://github.com/AlexxIT/go2rtc.git /go2rtc
+COPY docker/go2rtc.patch /go2rtc/
+RUN cd /go2rtc && \
+    patch -p1 < go2rtc.patch && \
+    go build -o go2rtc_linux_$(if [ "$TARGETARCH" = "arm" ]; then echo arm; else echo $TARGETARCH; fi)
+
+# ── Stage 3: Build Go binary ──────────────────────────────────────────────────
 FROM golang:1.26.2-alpine AS builder
 RUN apk add --no-cache git ca-certificates
 WORKDIR /src
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# Replace placeholder video-rtc.js with real one before embedding
-COPY --from=go2rtc-fetch /video-rtc.js ./internal/webui/static/video-rtc.js
+# Copy video-rtc.js from release (not needed from patched build since we're not
+# rebuilding the web UI assets, just the native go2rtc binary)
+COPY --from=video-rtc-fetch /video-rtc.js ./internal/webui/static/video-rtc.js
+# Copy patched go2rtc binary from its build stage
+COPY --from=go2rtc-builder /go2rtc/go2rtc_linux_* /go2rtc-patched
 ARG VERSION=dev
 RUN CGO_ENABLED=0 GOOS=linux \
     go build -ldflags="-s -w -X main.Version=${VERSION}" \
@@ -37,7 +45,7 @@ RUN CGO_ENABLED=0 GOOS=linux \
     go build -ldflags="-s -w" \
     -o /gwell-proxy ./cmd/gwell-proxy
 
-# ── Stage 3: Runtime ──────────────────────────────────────────────────────────
+# ── Stage 4: Runtime ──────────────────────────────────────────────────────────
 FROM alpine:3.21
 # ffmpeg is used by two things in this image:
 #   1. go2rtc's /api/frame.jpeg snapshot endpoint (JPEG frame extraction)
@@ -50,9 +58,9 @@ FROM alpine:3.21
 RUN apk add --no-cache ca-certificates tzdata ffmpeg && \
     mkdir -p /config /media/snapshots /media/recordings
 
-COPY --from=builder      /wyze-bridge   /usr/local/bin/wyze-bridge
-COPY --from=builder      /gwell-proxy   /usr/local/bin/gwell-proxy
-COPY --from=go2rtc-fetch /go2rtc        /usr/local/bin/go2rtc
+COPY --from=builder      /wyze-bridge     /usr/local/bin/wyze-bridge
+COPY --from=builder      /gwell-proxy     /usr/local/bin/gwell-proxy
+COPY --from=go2rtc-builder /go2rtc/go2rtc_linux_*  /usr/local/bin/go2rtc
 
 EXPOSE 5080
 EXPOSE 1984

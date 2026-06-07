@@ -1,6 +1,7 @@
 package camera
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/IDisposable/docker-wyze-bridge/internal/wyzeapi"
@@ -140,9 +141,12 @@ func TestCamera_StreamURL(t *testing.T) {
 		DTLS:  true,
 	}, "hd", true, false)
 
-	url := cam.StreamURL()
+	url := cam.StreamURL(0)
 	if url == "" {
 		t.Error("StreamURL should not be empty")
+	}
+	if strings.Contains(url, "timeout=") {
+		t.Error("StreamURL with 0 discoverTimeout should not contain timeout param")
 	}
 }
 

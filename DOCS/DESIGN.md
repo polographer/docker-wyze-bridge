@@ -826,8 +826,9 @@ RECORD_{CAM_NAME}   bool
 STATE_DIR           string   state/config dir, default "/config"
 
 # ── Debugging ────────────────────────────────────────────────────────────────
-LOG_LEVEL           string   "trace"|"debug"|"info"|"warn"|"error", default "info"
-FORCE_IOTC_DETAIL   bool     verbose TUTK tracing (sets go2rtc debug + our trace)
+LOG_LEVEL             string   "trace"|"debug"|"info"|"warn"|"error", default "info"
+FORCE_IOTC_DETAIL     bool     verbose TUTK tracing (sets go2rtc debug + our trace)
+TUTK_DISCOVERY_TIMEOUT string   TUTK IOTC discovery timeout for wyze:// URLs, default "15s" (patched go2rtc)
 ```
 
 #### 5.8.2 Docker Secrets

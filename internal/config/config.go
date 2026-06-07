@@ -100,8 +100,9 @@ type Config struct {
 	GwellControlPort    int
 	GwellLogLevel       string
 	GwellFFmpegLogLevel string // ffmpeg -loglevel inside gwell-proxy (quiet/panic/fatal/error/warning/info/verbose/debug/trace)
-	GwellDumpDir        string // if non-empty, gwell-proxy tees raw H.264 to this dir for offline ffprobe
-	GwellDeadmanTimeout time.Duration
+	GwellDumpDir           string // if non-empty, gwell-proxy tees raw H.264 to this dir for offline ffprobe
+	GwellDeadmanTimeout    time.Duration
+	TutkDiscoveryTimeout   time.Duration // TUTK IOTC discovery timeout for wyze:// URLs (default 15s)
 
 	// Per-camera overrides keyed by normalized camera name (UPPER_CASE)
 	CamOverrides map[string]CamOverride
@@ -219,8 +220,9 @@ func Load() (*Config, error) {
 		GwellControlPort:    envInt("GWELL_CONTROL_PORT", 18564),
 		GwellLogLevel:       env("GWELL_LOG_LEVEL", ""),
 		GwellFFmpegLogLevel: env("GWELL_FFMPEG_LOGLEVEL", "warning"),
-		GwellDumpDir:        env("GWELL_DUMP_DIR", ""),
-		GwellDeadmanTimeout: envDuration("GWELL_DEADMAN_TIMEOUT", 2*time.Minute),
+		GwellDumpDir:           env("GWELL_DUMP_DIR", ""),
+		GwellDeadmanTimeout:    envDuration("GWELL_DEADMAN_TIMEOUT", 2*time.Minute),
+		TutkDiscoveryTimeout:   envDuration("TUTK_DISCOVERY_TIMEOUT", 15*time.Second),
 
 		// Internals
 		CamOverrides:    make(map[string]CamOverride),

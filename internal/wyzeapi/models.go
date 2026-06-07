@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // ModelNames maps product_model codes to human-readable names.
@@ -127,8 +128,10 @@ func (c CameraInfo) NormalizedName() string {
 }
 
 // StreamURL generates a go2rtc wyze:// stream URL for this camera.
-func (c CameraInfo) StreamURL(quality string) string {
-	return fmt.Sprintf(
+// If discoverTimeout > 0, it's appended as ?timeout=<duration> for
+// go2rtc's tutk/discovery timeout (patched upstream).
+func (c CameraInfo) StreamURL(quality string, discoverTimeout time.Duration) string {
+	u := fmt.Sprintf(
 		"wyze://%s?uid=%s&enr=%s&mac=%s&model=%s&subtype=%s&dtls=%v",
 		c.LanIP,
 		c.P2PID,
@@ -138,6 +141,10 @@ func (c CameraInfo) StreamURL(quality string) string {
 		quality,
 		c.DTLS,
 	)
+	if discoverTimeout > 0 {
+		u += "&timeout=" + discoverTimeout.String()
+	}
+	return u
 }
 
 // Property IDs for Wyze cloud API commands.
