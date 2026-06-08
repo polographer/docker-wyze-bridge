@@ -1,13 +1,15 @@
-diff -ruN a/pkg/tutk/dtls/conn_dtls.go b/pkg/tutk/dtls/conn_dtls.go
---- a/pkg/tutk/dtls/conn_dtls.go	2026-06-07 15:42:27.410682483 -0400
-+++ b/pkg/tutk/dtls/conn_dtls.go	2026-06-07 15:42:27.446683922 -0400
-@@ -112,9 +112,12 @@
+--- a/pkg/tutk/dtls/conn_dtls.go
++++ b/pkg/tutk/dtls/conn_dtls.go
+@@ -111,10 +111,14 @@
+ 	rxSeqStart uint16
  	rxSeqEnd   uint16
  	rxSeqInit  bool
- 	cmdAck     func()
+-	cmdAck     func()
++	cmdAck        func()
++
 +	// discoverTimeout controls how long discovery() waits for the
 +	// camera to respond to UDP discovery packets.
-+	discoverTimeout   time.Duration
++	discoverTimeout time.Duration
  }
  
 -func DialDTLS(host string, port int, uid, authKey, enr string, verbose bool) (*DTLSConn, error) {
@@ -15,15 +17,17 @@ diff -ruN a/pkg/tutk/dtls/conn_dtls.go b/pkg/tutk/dtls/conn_dtls.go
  	udp, err := net.ListenUDP("udp", nil)
  	if err != nil {
  		return nil, err
-@@ -141,6 +144,7 @@
+@@ -140,7 +144,8 @@
+ 		ctx:        ctx,
  		cancel:     cancel,
  		rxSeqStart: 0xffff,
- 		rxSeqEnd:   0xffff,
+-		rxSeqEnd:   0xffff,
++		rxSeqEnd:     0xffff,
 +		discoverTimeout: discoverTimeout,
  	}
  
  	if err = c.discovery(); err != nil {
-@@ -503,7 +507,7 @@
+@@ -503,7 +508,7 @@
  	pktCC51 := c.msgDiscoCC51(0, 0, false)
  
  	buf := make([]byte, 2048)
@@ -32,28 +36,37 @@ diff -ruN a/pkg/tutk/dtls/conn_dtls.go b/pkg/tutk/dtls/conn_dtls.go
  
  	for time.Now().Before(deadline) {
  		c.conn.WriteToUDP(pktIOTC, c.addr)
-diff -ruN a/pkg/wyze/client.go b/pkg/wyze/client.go
---- a/pkg/wyze/client.go	2026-06-07 15:42:27.411438587 -0400
-+++ b/pkg/wyze/client.go	2026-06-07 15:42:27.466599677 -0400
-@@ -85,6 +85,12 @@
+--- a/pkg/wyze/client.go
++++ b/pkg/wyze/client.go
+@@ -69,7 +69,8 @@
  
- 	query := u.Query()
+ 	audioCodecID    byte
+ 	audioSampleRate uint32
+-	audioChannels   uint8
++	audioChannels       uint8
++	timeout             time.Duration
+ }
  
-+	discoverTimeout := 5 * time.Second
+ type AuthResponse struct {
+@@ -98,6 +99,12 @@
+ 		verbose: query.Get("verbose") == "true",
+ 	}
+ 
 +	if td := query.Get("timeout"); td != "" {
 +		if d, err := time.ParseDuration(td); err == nil {
-+			discoverTimeout = d
++			c.timeout = d
 +		}
 +	}
- 	if query.Get("dtls") != "true" {
- 		return nil, fmt.Errorf("wyze: only DTLS cameras are supported")
- 	}
-@@ -304,7 +310,7 @@
++
+ 	c.authKey = string(dtls.CalculateAuthKey(c.enr, c.mac))
+ 
+ 	if c.verbose {
+@@ -304,7 +311,7 @@
  		host = host[:idx]
  	}
  
 -	conn, err := dtls.DialDTLS(host, port, c.uid, c.authKey, c.enr, c.verbose)
-+	conn, err := dtls.DialDTLS(host, port, c.uid, c.authKey, c.enr, c.verbose, discoverTimeout)
++	conn, err := dtls.DialDTLS(host, port, c.uid, c.authKey, c.enr, c.verbose, c.timeout)
  	if err != nil {
  		return fmt.Errorf("wyze: connect failed: %w", err)
  	}
