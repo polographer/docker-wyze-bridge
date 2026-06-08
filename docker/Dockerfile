@@ -8,7 +8,7 @@ RUN apk add --no-cache curl ca-certificates && \
 
 # ── Stage 2: Build patched go2rtc binary ─────────────────────────────────────
 FROM golang:1.26.2-alpine AS go2rtc-builder
-RUN apk add --no-cache git ca-certificates
+RUN apk add --no-cache git ca-certificates patch
 ARG GO2RTC_VERSION=1.9.14
 ARG TARGETARCH
 # Build go2rtc from source so we can apply our custom patch (TUTK discover timeout)
