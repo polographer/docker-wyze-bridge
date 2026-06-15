@@ -227,5 +227,8 @@ func (m *Manager) emitLogLine(line string) {
 }
 
 func shouldSuppressGo2RTCLogLine(line string) bool {
+	if strings.Contains(line, "broken pipe") {
+		return true
+	}
 	return strings.HasPrefix(line, "[OOO]") && strings.Contains(line, " - reset")
 }

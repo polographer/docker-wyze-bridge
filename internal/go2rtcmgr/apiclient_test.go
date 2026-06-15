@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+
+	"time"
 
 	"github.com/rs/zerolog"
 )
@@ -168,5 +171,77 @@ func TestAPIClient_ConnectionRefused(t *testing.T) {
 	_, err := c.ListStreams(context.Background())
 	if err == nil {
 		t.Error("expected error for connection refused")
+	}
+}
+
+
+func TestAPIClient_AddStreamWithTimeout_Success(t *testing.T) {
+	var getCallCount int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "PUT" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+		// GET /api/streams - first 2 calls return no producers, then producer appears
+		getCallCount++
+		if getCallCount <= 2 {
+			json.NewEncoder(w).Encode(map[string]*StreamInfo{
+				"test_cam": {}, // no producers
+			})
+			return
+		}
+		// Producer appears after a few polls
+		json.NewEncoder(w).Encode(map[string]*StreamInfo{
+			"test_cam": {
+				Producers: []ProducerInfo{{URL: "wyze://1.2.3.4"}},
+			},
+		})
+	}))
+	defer server.Close()
+
+	c := NewAPIClient(server.URL, zerolog.Nop())
+	err := c.AddStreamWithTimeout(context.Background(), "test_cam", "wyze://1.2.3.4", 5*time.Second)
+	if err != nil {
+		t.Fatalf("AddStreamWithTimeout: %v", err)
+	}
+	if getCallCount < 3 {
+		t.Errorf("expected at least 3 GET calls, got %d", getCallCount)
+	}
+}
+
+func TestAPIClient_AddStreamWithTimeout_Timeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "PUT" {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			// Never report an active producer
+			json.NewEncoder(w).Encode(map[string]*StreamInfo{})
+		}
+	}))
+	defer server.Close()
+
+	c := NewAPIClient(server.URL, zerolog.Nop())
+	err := c.AddStreamWithTimeout(context.Background(), "test_cam", "wyze://1.2.3.4", 500*time.Millisecond)
+	if err == nil {
+		t.Fatal("expected timeout error, got nil")
+	}
+	if !strings.Contains(err.Error(), "timeout") {
+		t.Errorf("expected timeout error, got: %v", err)
+	}
+}
+
+func TestAPIClient_AddStreamWithTimeout_AddStreamFails(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "PUT" {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("internal error"))
+		}
+	}))
+	defer server.Close()
+
+	c := NewAPIClient(server.URL, zerolog.Nop())
+	err := c.AddStreamWithTimeout(context.Background(), "test_cam", "wyze://1.2.3.4", 5*time.Second)
+	if err == nil {
+		t.Fatal("expected error from failed AddStream")
 	}
 }

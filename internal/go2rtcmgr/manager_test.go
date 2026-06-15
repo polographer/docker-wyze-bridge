@@ -107,3 +107,21 @@ func TestEmitLogLine(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldSuppressGo2RTCLogLine_BrokenPipe(t *testing.T) {
+	if !shouldSuppressGo2RTCLogLine("go2rtc/internal/rtsp/rtsp.go:262 > error=write tcp 192.168.50.70:8554->192.168.50.172:51794: write: broken pipe") {
+		t.Error("should suppress broken pipe lines")
+	}
+	if !shouldSuppressGo2RTCLogLine("[ERR] rtsp.go:262 broken pipe") {
+		t.Error("should suppress broken pipe at any position in line")
+	}
+}
+
+func TestShouldSuppressGo2RTCLogLine_AllowOtherErrors(t *testing.T) {
+	if shouldSuppressGo2RTCLogLine("[ERR] something else happened") {
+		t.Error("should not suppress other errors")
+	}
+	if shouldSuppressGo2RTCLogLine("[WRN] network timeout") {
+		t.Error("should not suppress warnings")
+	}
+}

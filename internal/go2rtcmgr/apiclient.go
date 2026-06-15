@@ -206,3 +206,32 @@ func (c *APIClient) GetSnapshot(ctx context.Context, name string) ([]byte, error
 
 	return io.ReadAll(resp.Body)
 }
+
+// AddStreamWithTimeout adds a stream to go2rtc and polls for an active
+// producer to appear, waiting up to the given timeout. This ensures
+// callers know that go2rtc actually has a live source before they
+// transition to "streaming" — the camera is reachable, authenticated,
+// and go2rtc's TUTK/gwell proxy source is pulling frames.
+func (c *APIClient) AddStreamWithTimeout(ctx context.Context, name, streamURL string, timeout time.Duration) error {
+	if err := c.AddStream(ctx, name, streamURL); err != nil {
+		return err
+	}
+
+	pollCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	pollTicker := time.NewTicker(500 * time.Millisecond)
+	defer pollTicker.Stop()
+
+	for {
+		select {
+		case <-pollCtx.Done():
+			return fmt.Errorf("timeout waiting for active producer on stream %q after %v", name, timeout)
+		case <-pollTicker.C:
+			if active, err := c.HasActiveProducer(ctx, name); err == nil && active {
+				c.log.Debug().Str("name", name).Msg("active producer detected")
+				return nil
+			}
+		}
+	}
+}

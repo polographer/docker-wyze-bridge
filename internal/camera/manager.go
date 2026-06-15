@@ -251,7 +251,7 @@ func (m *Manager) connectCamera(ctx context.Context, cam *Camera) {
 		Bool("dtls", snap.Info.DTLS).
 		Msg("connecting camera to go2rtc")
 
-	if err := go2rtc.AddStream(ctx, cam.Name(), streamURL); err != nil {
+	if err := go2rtc.AddStreamWithTimeout(ctx, cam.Name(), streamURL, 15*time.Second); err != nil {
 		backoff := cam.IncrementError()
 		m.log.Error().Err(err).
 			Str("cam", cam.Name()).
