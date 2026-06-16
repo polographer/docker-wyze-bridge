@@ -338,7 +338,7 @@ type Camera struct {
 }
 ```
 
-**Reconnection backoff:** `min(5s * 2^errorCount, 5min)`. Resets to 0 on successful stream.
+**Reconnection backoff:** `min(5s * errorCount, 5min)`. Resets to 0 on successful stream.
 
 **IP refresh:** On connection failure, re-query Wyze API for current device IP before next attempt. DHCP assigns can change.
 

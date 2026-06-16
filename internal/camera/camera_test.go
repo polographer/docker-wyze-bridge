@@ -34,20 +34,20 @@ func TestCameraState(t *testing.T) {
 func TestBackoffDuration(t *testing.T) {
 	cam := NewCamera(wyzeapi.CameraInfo{Name: "test"}, "hd", true, false)
 
-	// First error: 5s * 2^1 = 10s
+	// First error: 5s * 1 = 5s
 	d := cam.IncrementError()
-	if d != 10*time.Second {
-		t.Errorf("backoff after 1 error = %v, want 10s", d)
+	if d != 5*time.Second {
+		t.Errorf("backoff after 1 error = %v, want 5s", d)
 	}
 
-	// Second error: 5s * 2^2 = 20s
+	// Second error: 5s * 2 = 10s
 	d = cam.IncrementError()
-	if d != 20*time.Second {
-		t.Errorf("backoff after 2 errors = %v, want 20s", d)
+	if d != 10*time.Second {
+		t.Errorf("backoff after 2 errors = %v, want 10s", d)
 	}
 
-	// Keep incrementing until we hit cap
-	for i := 0; i < 20; i++ {
+	// Keep incrementing until we hit cap (need 60 errors total for 5min)
+	for i := 2; i < 60; i++ {
 		d = cam.IncrementError()
 	}
 	if d != 5*time.Minute {

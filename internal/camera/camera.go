@@ -90,14 +90,11 @@ func (c *Camera) IncrementError() time.Duration {
 }
 
 // BackoffDuration returns the current backoff duration based on error count.
-// Formula: min(5s * 2^errorCount, 5min)
+// Formula: min(5s * errorCount, 5min)
 func (c *Camera) BackoffDuration() time.Duration {
-	d := 5 * time.Second
-	for i := 0; i < c.ErrorCount; i++ {
-		d *= 2
-		if d > 5*time.Minute {
-			return 5 * time.Minute
-		}
+	d := time.Duration(c.ErrorCount) * 5 * time.Second
+	if d > 5*time.Minute {
+		return 5 * time.Minute
 	}
 	return d
 }
