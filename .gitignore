@@ -33,3 +33,4 @@ go2rtc
 go2rtc.exe
 coverage.out
 coverage.html
+.opencode/
