@@ -59,4 +59,4 @@ services:
             # - FORCE_IOTC_DETAIL=false
 
             # TUTK stream discovery timeout (TUTK IOTC UDP discovery on slow networks)
-            # - TUTK_DISCOVERY_TIMEOUT=15s
+            # - TUTK_DISCOVERY_TIMEOUT=15

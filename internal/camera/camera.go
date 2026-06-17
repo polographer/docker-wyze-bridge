@@ -50,6 +50,10 @@ type Camera struct {
 	mu          sync.RWMutex
 }
 
+// backoffStep is the per-error backoff duration (default 5s).
+// Set by the Manager at construction time from config.
+var backoffStep = 5 * time.Second
+
 // NewCamera creates a new Camera from discovered info with default settings.
 func NewCamera(info wyzeapi.CameraInfo, quality string, audio, record bool) *Camera {
 	return &Camera{
@@ -90,9 +94,9 @@ func (c *Camera) IncrementError() time.Duration {
 }
 
 // BackoffDuration returns the current backoff duration based on error count.
-// Formula: min(5s * errorCount, 5min)
+// Formula: min(backoffStep * errorCount, 5min)
 func (c *Camera) BackoffDuration() time.Duration {
-	d := time.Duration(c.ErrorCount) * 5 * time.Second
+	d := time.Duration(c.ErrorCount) * backoffStep
 	if d > 5*time.Minute {
 		return 5 * time.Minute
 	}

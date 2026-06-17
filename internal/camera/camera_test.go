@@ -32,6 +32,10 @@ func TestCameraState(t *testing.T) {
 }
 
 func TestBackoffDuration(t *testing.T) {
+	original := backoffStep
+	backoffStep = 5 * time.Second
+	defer func() { backoffStep = original }()
+
 	cam := NewCamera(wyzeapi.CameraInfo{Name: "test"}, "hd", true, false)
 
 	// First error: 5s * 1 = 5s
@@ -72,6 +76,24 @@ func TestStateString(t *testing.T) {
 		if got := tt.state.String(); got != tt.want {
 			t.Errorf("State(%d).String() = %q, want %q", tt.state, got, tt.want)
 		}
+	}
+}
+
+func TestBackoffDurationCustom(t *testing.T) {
+	original := backoffStep
+	backoffStep = 10 * time.Second
+	defer func() { backoffStep = original }()
+
+	cam := NewCamera(wyzeapi.CameraInfo{Name: "test"}, "hd", true, false)
+
+	d := cam.IncrementError()
+	if d != 10*time.Second {
+		t.Errorf("backoff after 1 error = %v, want 10s", d)
+	}
+
+	d = cam.IncrementError()
+	if d != 20*time.Second {
+		t.Errorf("backoff after 2 errors = %v, want 20s", d)
 	}
 }
 

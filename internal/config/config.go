@@ -54,9 +54,10 @@ type Config struct {
 	FilterBlocks bool
 
 	// Camera Defaults
-	Quality     string
-	Audio       bool
-	OfflineTime int
+	Quality        string
+	Audio          bool
+	OfflineTime    int
+	ReconnectBackoff int   // seconds
 
 	// Recording
 	RecordAll      bool
@@ -102,7 +103,7 @@ type Config struct {
 	GwellFFmpegLogLevel string // ffmpeg -loglevel inside gwell-proxy (quiet/panic/fatal/error/warning/info/verbose/debug/trace)
 	GwellDumpDir           string // if non-empty, gwell-proxy tees raw H.264 to this dir for offline ffprobe
 	GwellDeadmanTimeout    time.Duration
-	TutkDiscoveryTimeout   time.Duration // TUTK IOTC discovery timeout for wyze:// URLs (default 15s)
+	TutkDiscoveryTimeout   int // seconds
 
 	// Per-camera overrides keyed by normalized camera name (UPPER_CASE)
 	CamOverrides map[string]CamOverride
@@ -164,9 +165,10 @@ func Load() (*Config, error) {
 		FilterBlocks: envBool("FILTER_BLOCKS", false),
 
 		// Camera Defaults
-		Quality:     env("QUALITY", "hd"),
-		Audio:       envBool("AUDIO", true),
-		OfflineTime: envInt("OFFLINE_TIME", 30),
+		Quality:            env("QUALITY", "hd"),
+		Audio:              envBool("AUDIO", true),
+		OfflineTime:        envInt("OFFLINE_TIME", 30),
+		ReconnectBackoff:   envInt("RECONNECT_BACKOFF", 5),
 
 		// Recording — default under /media/recordings so bare-Docker
 		// users can mount a single host directory at /media and get
@@ -222,7 +224,7 @@ func Load() (*Config, error) {
 		GwellFFmpegLogLevel: env("GWELL_FFMPEG_LOGLEVEL", "warning"),
 		GwellDumpDir:           env("GWELL_DUMP_DIR", ""),
 		GwellDeadmanTimeout:    envDuration("GWELL_DEADMAN_TIMEOUT", 2*time.Minute),
-		TutkDiscoveryTimeout:   envDuration("TUTK_DISCOVERY_TIMEOUT", 15*time.Second),
+		TutkDiscoveryTimeout:   envInt("TUTK_DISCOVERY_TIMEOUT", 15),
 
 		// Internals
 		CamOverrides:    make(map[string]CamOverride),

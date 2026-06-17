@@ -46,6 +46,9 @@ func NewManager(
 	go2rtcAPI *go2rtcmgr.APIClient,
 	log zerolog.Logger,
 ) *Manager {
+	if cfg.ReconnectBackoff > 0 {
+		backoffStep = time.Duration(cfg.ReconnectBackoff) * time.Second
+	}
 	m := &Manager{
 		log: log,
 		cfg: cfg,
@@ -280,7 +283,7 @@ func (m *Manager) streamSourceFor(cam *Camera) (url, protocol string) {
 	case info.IsGwell():
 		return "", "gwell"
 	default:
-		return cam.StreamURL(m.cfg.TutkDiscoveryTimeout), "tutk"
+		return cam.StreamURL(time.Duration(m.cfg.TutkDiscoveryTimeout) * time.Second), "tutk"
 	}
 }
 
@@ -414,7 +417,7 @@ func (m *Manager) SetQuality(ctx context.Context, name, quality string) error {
 	}
 	// Remove and re-add in go2rtc with new URL
 	_ = go2rtc.DeleteStream(ctx, name)
-	return go2rtc.AddStream(ctx, name, cam.StreamURL(m.cfg.TutkDiscoveryTimeout))
+	return go2rtc.AddStream(ctx, name, cam.StreamURL(time.Duration(m.cfg.TutkDiscoveryTimeout) * time.Second))
 }
 
 // RestartStream forces a camera reconnect.

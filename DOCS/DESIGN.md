@@ -338,7 +338,7 @@ type Camera struct {
 }
 ```
 
-**Reconnection backoff:** `min(5s * errorCount, 5min)`. Resets to 0 on successful stream.
+**Reconnection backoff:** `min(RECONNECT_BACKOFF * errorCount, 5min)`. Resets to 0 on successful stream.
 
 **IP refresh:** On connection failure, re-query Wyze API for current device IP before next attempt. DHCP assigns can change.
 
@@ -797,6 +797,7 @@ FILTER_BLOCKS       bool     invert: listed cameras are excluded
 QUALITY             string   "hd" | "sd", default "hd"
 AUDIO               bool     default true
 OFFLINE_TIME        int      seconds before marked offline, default 30
+RECONNECT_BACKOFF   int      per-error reconnect delay in seconds, default 5
 
 # ── Recording ────────────────────────────────────────────────────────────────
 RECORD_ALL          bool     enable recording for all cameras
@@ -828,7 +829,7 @@ STATE_DIR           string   state/config dir, default "/config"
 # ── Debugging ────────────────────────────────────────────────────────────────
 LOG_LEVEL             string   "trace"|"debug"|"info"|"warn"|"error", default "info"
 FORCE_IOTC_DETAIL     bool     verbose TUTK tracing (sets go2rtc debug + our trace)
-TUTK_DISCOVERY_TIMEOUT string   TUTK IOTC discovery timeout for wyze:// URLs, default "15s" (patched go2rtc)
+TUTK_DISCOVERY_TIMEOUT int      TUTK IOTC discovery timeout in seconds, default 15
 ```
 
 #### 5.8.2 Docker Secrets
