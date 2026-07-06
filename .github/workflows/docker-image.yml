@@ -122,14 +122,19 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
 
-  # Stable HA add-on — built from main branch pushes and tag releases
-  # only. Pulls the main-tagged wyze-bridge image produced by the
-  # upstream build job.
+  # Stable HA add-on — built from main branch pushes and stable tag
+  # releases only. Pulls the main-tagged wyze-bridge image produced
+  # by the upstream build job. Pre-release tags (vX.Y.Z-beta.N etc.)
+  # are excluded because this job reads config.yaml's version — which
+  # tracks *stable*, not the beta tag — and would re-publish the last
+  # stable HA image with beta code under the old tag. Beta testers
+  # get the same bits through the edge add-on channel.
   addon-stable:
     needs: [build]
     if: >-
       github.event_name != 'pull_request' &&
-      (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+      (github.ref == 'refs/heads/main' ||
+       (startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')))
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -319,7 +324,12 @@ jobs:
   version-bump:
     needs: [addon-stable]
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
+    # Only bump for real stable tags (vX.Y.Z). Pre-release tags
+    # (vX.Y.Z-beta.N, -rc.N, -alpha.N) still fire addon-stable so
+    # the beta image publishes, but must NOT rewrite main's stable
+    # config.yaml — HA stable users would then see a beta version
+    # on their next add-on refresh.
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
     permissions:
       contents: write
     steps:
