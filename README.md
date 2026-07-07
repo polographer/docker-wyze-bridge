@@ -14,6 +14,10 @@ Built in **pure Go** on top of [go2rtc](https://github.com/AlexxIT/go2rtc).
 No Python, no binary SDKs, no C code beyond the `ffmpeg` used for
 snapshot extraction and MP4 recording. Docker image ~65 MB.
 
+## raison d'être of this fork
+
+I have a bad network; this fork tweaks the timeout of the initial discovery of the cameras to allow slow networks to connect
+
 ![Supports amd64](https://img.shields.io/badge/amd64-yes-success.svg)
 ![Supports arm64v8](https://img.shields.io/badge/arm64v8-yes-success.svg)
 ![Apple Silicon](https://img.shields.io/badge/apple_silicon-yes-success.svg)
