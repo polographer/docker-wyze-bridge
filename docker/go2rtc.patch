@@ -39,7 +39,7 @@ index c1d5f6c..22f1044 100644
  	for time.Now().Before(deadline) {
  		c.conn.WriteToUDP(pktIOTC, c.addr)
 diff --git a/pkg/wyze/client.go b/pkg/wyze/client.go
-index 0fe878e..6e40a8f 100644
+index 0fe878e..932bfff 100644
 --- a/pkg/wyze/client.go
 +++ b/pkg/wyze/client.go
 @@ -69,7 +69,8 @@ type Client struct {
@@ -52,10 +52,13 @@ index 0fe878e..6e40a8f 100644
  }
  
  type AuthResponse struct {
-@@ -96,6 +97,15 @@ func Dial(rawURL string) (*Client, error) {
+@@ -95,7 +96,16 @@ func Dial(rawURL string) (*Client, error) {
+ 		enr:     query.Get("enr"),
  		mac:     query.Get("mac"),
  		model:   query.Get("model"),
- 		verbose: query.Get("verbose") == "true",
+-		verbose: query.Get("verbose") == "true",
++		verbose:  query.Get("verbose") == "true",
++	}
 +
 +	// Default to 5s discovery timeout; allow override via ?timeout=Xs
 +	// query parameter on the wyze:// source URL.
@@ -64,7 +67,6 @@ index 0fe878e..6e40a8f 100644
 +		if d, err := time.ParseDuration(td); err == nil {
 +			c.timeout = d
 +		}
-+	}
  	}
  
  	c.authKey = string(dtls.CalculateAuthKey(c.enr, c.mac))
