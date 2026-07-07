@@ -65,6 +65,10 @@ type Config struct {
 	// the manual MODEL_OVERRIDES workaround). See
 	// DOCS/TUTK_WEBRTC_FALLBACK_DESIGN.md.
 	TUTKFallbackThreshold int
+	// TutkDiscoveryTimeout is the time go2rtc waits for the camera to
+	// respond to UDP discovery packets on the TUTK path. Zero falls
+	// back to go2rtc's built-in 5-second default.
+	TutkDiscoveryTimeout time.Duration
 
 	// Recording
 	RecordAll      bool
@@ -177,7 +181,8 @@ func Load() (*Config, error) {
 		Quality:               env("QUALITY", "hd"),
 		Audio:                 envBool("AUDIO", true),
 		OfflineTime:           envInt("OFFLINE_TIME", 30),
-		TUTKFallbackThreshold: envInt("TUTK_FALLBACK_THRESHOLD", 5),
+		TUTKFallbackThreshold:  envInt("TUTK_FALLBACK_THRESHOLD", 5),
+		TutkDiscoveryTimeout:   envDuration("TUTK_DISCOVERY_TIMEOUT", 0),
 
 		// Recording — default under /media/recordings so bare-Docker
 		// users can mount a single host directory at /media and get

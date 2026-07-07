@@ -165,11 +165,12 @@ func (c *Camera) Name() string {
 
 // StreamURL returns the go2rtc wyze:// URL for this camera. Reads
 // Info + Quality under the lock so it's consistent with concurrent
-// UpdateInfo / SetQuality.
-func (c *Camera) StreamURL() string {
+// UpdateInfo / SetQuality. If timeout is non-zero it is appended as
+// a ?timeout= query parameter for the go2rtc tutk discovery timeout.
+func (c *Camera) StreamURL(timeout time.Duration) string {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
-	return c.Info.StreamURL(c.Quality)
+	return c.Info.StreamURL(c.Quality, timeout)
 }
 
 // UpdateInfo updates the camera info (e.g., after re-discovery with new IP).

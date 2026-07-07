@@ -1,6 +1,8 @@
+diff --git a/pkg/tutk/dtls/conn_dtls.go b/pkg/tutk/dtls/conn_dtls.go
+index c1d5f6c..22f1044 100644
 --- a/pkg/tutk/dtls/conn_dtls.go
 +++ b/pkg/tutk/dtls/conn_dtls.go
-@@ -111,10 +111,14 @@
+@@ -111,10 +111,14 @@ type DTLSConn struct {
  	rxSeqStart uint16
  	rxSeqEnd   uint16
  	rxSeqInit  bool
@@ -17,7 +19,7 @@
  	udp, err := net.ListenUDP("udp", nil)
  	if err != nil {
  		return nil, err
-@@ -140,7 +144,8 @@
+@@ -140,7 +144,8 @@ func DialDTLS(host string, port int, uid, authKey, enr string, verbose bool) (*D
  		ctx:        ctx,
  		cancel:     cancel,
  		rxSeqStart: 0xffff,
@@ -27,7 +29,7 @@
  	}
  
  	if err = c.discovery(); err != nil {
-@@ -503,7 +508,7 @@
+@@ -503,7 +508,7 @@ func (c *DTLSConn) discovery() error {
  	pktCC51 := c.msgDiscoCC51(0, 0, false)
  
  	buf := make([]byte, 2048)
@@ -36,9 +38,11 @@
  
  	for time.Now().Before(deadline) {
  		c.conn.WriteToUDP(pktIOTC, c.addr)
+diff --git a/pkg/wyze/client.go b/pkg/wyze/client.go
+index 0fe878e..6e40a8f 100644
 --- a/pkg/wyze/client.go
 +++ b/pkg/wyze/client.go
-@@ -69,7 +69,8 @@
+@@ -69,7 +69,8 @@ type Client struct {
  
  	audioCodecID    byte
  	audioSampleRate uint32
@@ -48,20 +52,23 @@
  }
  
  type AuthResponse struct {
-@@ -98,6 +99,12 @@
+@@ -96,6 +97,15 @@ func Dial(rawURL string) (*Client, error) {
+ 		mac:     query.Get("mac"),
+ 		model:   query.Get("model"),
  		verbose: query.Get("verbose") == "true",
- 	}
- 
++
++	// Default to 5s discovery timeout; allow override via ?timeout=Xs
++	// query parameter on the wyze:// source URL.
++	c.timeout = 5 * time.Second
 +	if td := query.Get("timeout"); td != "" {
 +		if d, err := time.ParseDuration(td); err == nil {
 +			c.timeout = d
 +		}
 +	}
-+
- 	c.authKey = string(dtls.CalculateAuthKey(c.enr, c.mac))
+ 	}
  
- 	if c.verbose {
-@@ -304,7 +311,7 @@
+ 	c.authKey = string(dtls.CalculateAuthKey(c.enr, c.mac))
+@@ -304,7 +314,7 @@ func (c *Client) connect() error {
  		host = host[:idx]
  	}
  

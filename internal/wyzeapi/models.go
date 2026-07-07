@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"regexp"
 	"strings"
+	"time"
 )
 
 // ModelSpec is the routing + UI metadata for a single Wyze product
@@ -240,9 +241,23 @@ func (c CameraInfo) NormalizedName() string {
 }
 
 // StreamURL generates a go2rtc wyze:// stream URL for this camera.
-func (c CameraInfo) StreamURL(quality string) string {
+// If timeout is non-zero it is appended as ?timeout= for the go2rtc
+// tutk discovery timeout (the patched go2rtc reads it from the URL).
+func (c CameraInfo) StreamURL(quality string, timeout time.Duration) string {
+	if timeout <= 0 {
+		return fmt.Sprintf(
+			"wyze://%s?uid=%s&enr=%s&mac=%s&model=%s&subtype=%s&dtls=%v",
+			c.LanIP,
+			c.P2PID,
+			url.QueryEscape(c.ENR),
+			c.MAC,
+			c.Model,
+			quality,
+			c.DTLS,
+		)
+	}
 	return fmt.Sprintf(
-		"wyze://%s?uid=%s&enr=%s&mac=%s&model=%s&subtype=%s&dtls=%v",
+		"wyze://%s?uid=%s&enr=%s&mac=%s&model=%s&subtype=%s&dtls=%v&timeout=%s",
 		c.LanIP,
 		c.P2PID,
 		url.QueryEscape(c.ENR),
@@ -250,6 +265,7 @@ func (c CameraInfo) StreamURL(quality string) string {
 		c.Model,
 		quality,
 		c.DTLS,
+		timeout.String(),
 	)
 }
 
